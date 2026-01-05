@@ -11,7 +11,11 @@ This tool helps users backup their Claude Code settings when migrating between m
 - Installed plugins list (`plugins/`)
 - Optional: command history and session data
 
+Provides both CLI and TUI interfaces for flexibility.
+
 ## Usage
+
+### CLI (Zero Dependencies)
 
 ```bash
 # Basic backup (core config only)
@@ -30,6 +34,21 @@ python3 ccbackup.py --scan
 python3 ccbackup.py --list
 ```
 
+### TUI (Requires Textual)
+
+```bash
+pip3 install -r requirements.txt
+python3 ccbackup_tui.py
+```
+
+Features a beautiful terminal UI with:
+- ⚙️ Options panel (Sanitize, Include history)
+- 📋 System info display
+- 📜 Real-time output log
+- 📊 Progress bar
+- 🚀 Action buttons (List, Scan, Backup, Quit)
+- ⌨️ Keyboard shortcuts
+
 ## Output
 
 Backups are saved to `./backups/` directory with naming format:
@@ -37,12 +56,20 @@ Backups are saved to `./backups/` directory with naming format:
 ccbackup_<hostname>_<username>_<YYYYMMDD_HHMMSS>.zip
 ```
 
+Includes `manifest.json` with backup metadata (hostname, username, timestamp, platform).
+
 ## Key Files
 
-- `ccbackup.py` - Main backup script (Python 3, zero dependencies)
+- `ccbackup.py` - Core backup logic (Python 3, zero external dependencies)
+- `ccbackup_tui.py` - Terminal UI interface (requires Textual >= 0.40.0)
+- `requirements.txt` - TUI dependencies
+- `README.md` - Comprehensive usage guide
 
 ## Development Notes
 
-- Use Python standard library only (no external dependencies)
+- Core library uses only Python standard library (no external dependencies)
+- TUI uses Textual framework for cross-platform terminal UI
+- Modular design allows easy reuse of backup functions
 - Support both sanitized and full backup modes
 - Cross-platform compatible (macOS, Linux, Windows)
+- All backups include sensitive data detection and optional sanitization
