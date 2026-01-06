@@ -1,8 +1,5 @@
 # Claude Code Backup Tool - TUI Version
 # Python 3.10+
 
-# Interactive CLI/TUI
-questionary>=2.0.0
-
-# Rich text formatting
-rich>=13.0.0
+# Terminal UI - Centered window dialog (inspired by cc-mirror)
+blessed>=1.20.0
