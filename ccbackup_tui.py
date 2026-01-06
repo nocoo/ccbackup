@@ -19,14 +19,14 @@ from ccbackup import (
 term = Terminal()
 
 
-def render_line(content: str, line: int) -> str:
+def render_line(line: int, content: str) -> str:
     """Render a line at absolute position."""
-    return term.move(line, 0) + content
+    return term.move(line, 0) + content + "\n"
 
 
 def dim_cyan(text: str) -> str:
-    """Apply dim cyan style to text."""
-    return term.dim(term.cyan(text))
+    """Apply subtle cyan style to text (no dim support in all terminals)."""
+    return term.cyan(text)
 
 
 def show_main_menu() -> tuple[bool, bool]:
@@ -45,35 +45,35 @@ def show_main_menu() -> tuple[bool, bool]:
 
             # Header with branding
             output.append(render_line(
-                term.bold_magenta("❯ CCBACKUP"),
-                0
+                0,
+                term.bold_magenta("❯ CCBACKUP")
             ))
 
             # Title section
             output.append(render_line(
-                term.bold(term.yellow("─ BACKUP ─")),
-                2
+                2,
+                term.bold(term.yellow("─ BACKUP ─"))
             ))
 
             output.append(render_line(
-                term.bright_cyan("Claude Code Configuration Backup"),
-                3
+                3,
+                term.bright_cyan("Claude Code Configuration Backup")
             ))
             output.append(render_line(
-                term.yellow("Backup your settings, prompts, and skills"),
-                4
+                4,
+                term.yellow("Backup your settings, prompts, and skills")
             ))
 
             # Decorative line
             output.append(render_line(
-                term.magenta("─" * 60 + "◆" + "─" * (term.width - 62)),
-                5
+                5,
+                term.magenta("─" * 60 + "◆" + "─" * (term.width - 62))
             ))
 
             # System info
             output.append(render_line(
-                term.bold(f"★ System: {hostname} / {username}"),
-                7
+                7,
+                term.bold(f"★ System: {hostname} / {username}")
             ))
 
             # Menu options
@@ -120,35 +120,35 @@ def show_main_menu() -> tuple[bool, bool]:
                 # Description
                 if i < 2:
                     output.append(render_line(
-                        dim_cyan(f"       {desc}"),
-                        line_no + 1
+                        line_no + 1,
+                        dim_cyan(f"       {desc}")
                     ))
 
             # Summary section
             output.append(render_line(
-                term.magenta("─" * term.width),
-                17
+                17,
+                term.magenta("─" * term.width)
             ))
 
             output.append(render_line(
-                term.bold(f"Sanitize: {'✅' if sanitize else '❌'}  │  History: {'✅' if history else '❌'}"),
-                19
+                19,
+                term.bold(f"Sanitize: {'✅' if sanitize else '❌'}  │  History: {'✅' if history else '❌'}")
             ))
 
             output.append(render_line(
-                dim_cyan("Output: ./backups/"),
-                20
+                20,
+                dim_cyan("Output: ./backups/")
             ))
 
             # Footer
             output.append(render_line(
-                term.magenta("─" * term.width),
-                term.height - 3
+                term.height - 3,
+                term.magenta("─" * term.width)
             ))
 
             output.append(render_line(
-                dim_cyan("↑↓ Navigate  ·  Space Toggle  ·  Enter Confirm  ·  q Quit"),
-                term.height - 2
+                term.height - 2,
+                dim_cyan("↑↓ Navigate  ·  Space Toggle  ·  Enter Confirm  ·  q Quit")
             ))
 
             # Print all output
@@ -212,59 +212,59 @@ def show_result_dialog(success: bool, message: str, size: float = 0):
         output = []
 
         output.append(render_line(
-            term.bold_magenta("❯ CCBACKUP"),
-            0
+            0,
+            term.bold_magenta("❯ CCBACKUP")
         ))
 
         if success:
             output.append(render_line(
-                term.bold(term.green("─ SUCCESS ✅ ─")),
-                2
+                2,
+                term.bold(term.green("─ SUCCESS ✅ ─"))
             ))
             output.append(render_line(
-                term.bright_cyan("Backup completed successfully!"),
-                4
+                4,
+                term.bright_cyan("Backup completed successfully!")
             ))
 
             filename = Path(message).name
             output.append(render_line(
-                term.yellow(filename),
-                6
+                6,
+                term.yellow(filename)
             ))
             output.append(render_line(
-                dim_cyan(f"Size: {size:.0f} KB"),
-                7
+                7,
+                dim_cyan(f"Size: {size:.0f} KB")
             ))
 
             output.append(render_line(
-                term.bright_green("✅ Ready for migration"),
-                9
+                9,
+                term.bright_green("✅ Ready for migration")
             ))
         else:
             output.append(render_line(
-                term.bold(term.red("─ FAILED ❌ ─")),
-                2
+                2,
+                term.bold(term.red("─ FAILED ❌ ─"))
             ))
             output.append(render_line(
-                term.bright_cyan("Backup failed"),
-                4
+                4,
+                term.bright_cyan("Backup failed")
             ))
 
             msg_lines = message.split("\n")
             for i, line in enumerate(msg_lines[:5]):
                 output.append(render_line(
-                    term.red(line[:term.width - 1]),
-                    6 + i
+                    6 + i,
+                    term.red(line[:term.width - 1])
                 ))
 
         output.append(render_line(
-            term.magenta("─" * term.width),
-            term.height - 2
+            term.height - 2,
+            term.magenta("─" * term.width)
         ))
 
         output.append(render_line(
-            dim_cyan("Press any key to exit"),
-            term.height - 1
+            term.height - 1,
+            dim_cyan("Press any key to exit")
         ))
 
         print("".join(output), end="", flush=True)
@@ -304,12 +304,12 @@ def main():
         with term.fullscreen(), term.cbreak(), term.hidden_cursor():
             output = []
             output.append(render_line(
-                term.bold_magenta("❯ CCBACKUP"),
-                0
+                0,
+                term.bold_magenta("❯ CCBACKUP")
             ))
             output.append(render_line(
-                dim_cyan("Cancelled."),
-                term.height // 2
+                term.height // 2,
+                dim_cyan("Cancelled.")
             ))
             print(term.home + term.clear + "".join(output), end="", flush=True)
             import time
@@ -319,12 +319,12 @@ def main():
         with term.fullscreen(), term.cbreak(), term.hidden_cursor():
             output = []
             output.append(render_line(
-                term.bold_magenta("❯ CCBACKUP"),
-                0
+                0,
+                term.bold_magenta("❯ CCBACKUP")
             ))
             output.append(render_line(
-                term.red(f"Error: {e}"),
-                term.height // 2
+                term.height // 2,
+                term.red(f"Error: {e}")
             ))
             print(term.home + term.clear + "".join(output), end="", flush=True)
             import time
