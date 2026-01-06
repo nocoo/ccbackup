@@ -19,9 +19,18 @@ from ccbackup import (
 term = Terminal()
 
 
-def render_line(line: int, content: str) -> str:
-    """Render a line at absolute position."""
-    return term.move(line, 0) + content + "\n"
+def build_screen(lines_dict: dict) -> str:
+    """Build a complete screen from a dict of {line_number: content}."""
+    max_line = max(lines_dict.keys()) if lines_dict else 0
+    screen = []
+
+    for i in range(max_line + 1):
+        if i in lines_dict:
+            screen.append(lines_dict[i])
+        else:
+            screen.append("")
+
+    return "\n".join(screen)
 
 
 def dim_cyan(text: str) -> str:
@@ -39,42 +48,21 @@ def show_main_menu() -> tuple[bool, bool]:
         selected = 0  # 0=sanitize, 1=history, 2=backup, 3=quit
 
         while True:
-            print(term.home + term.clear, end="", flush=False)
-
-            output = []
+            lines = {}
 
             # Header with branding
-            output.append(render_line(
-                0,
-                term.bold_magenta("❯ CCBACKUP")
-            ))
+            lines[0] = term.bold_magenta("❯ CCBACKUP")
 
             # Title section
-            output.append(render_line(
-                2,
-                term.bold(term.yellow("─ BACKUP ─"))
-            ))
-
-            output.append(render_line(
-                3,
-                term.bright_cyan("Claude Code Configuration Backup")
-            ))
-            output.append(render_line(
-                4,
-                term.yellow("Backup your settings, prompts, and skills")
-            ))
+            lines[2] = term.bold(term.yellow("─ BACKUP ─"))
+            lines[3] = term.bright_cyan("Claude Code Configuration Backup")
+            lines[4] = term.yellow("Backup your settings, prompts, and skills")
 
             # Decorative line
-            output.append(render_line(
-                5,
-                term.magenta("─" * 60 + "◆" + "─" * (term.width - 62))
-            ))
+            lines[5] = term.magenta("─" * 60 + "◆" + "─" * (term.width - 62))
 
             # System info
-            output.append(render_line(
-                7,
-                term.bold(f"★ System: {hostname} / {username}")
-            ))
+            lines[7] = term.bold(f"★ System: {hostname} / {username}")
 
             # Menu options
             options = [
@@ -92,67 +80,34 @@ def show_main_menu() -> tuple[bool, bool]:
                     if i < 2:  # Toggles
                         check = "☑" if (sanitize if i == 0 else history) else "☐"
                         line_content = f"  {emoji} {check} {name}"
-                        output.append(render_line(
-                            term.reverse(term.bold(line_content)),
-                            line_no
-                        ))
+                        lines[line_no] = term.reverse(term.bold(line_content))
                     else:  # Buttons
                         line_content = f"  {emoji} {name}"
-                        output.append(render_line(
-                            term.reverse(term.bold(line_content)),
-                            line_no
-                        ))
+                        lines[line_no] = term.reverse(term.bold(line_content))
                 else:
                     if i < 2:  # Toggles
                         check = "☑" if (sanitize if i == 0 else history) else "☐"
                         line_content = f"  {emoji} {check} {name}"
-                        output.append(render_line(
-                            term.bright_cyan(line_content),
-                            line_no
-                        ))
+                        lines[line_no] = term.bright_cyan(line_content)
                     else:  # Buttons
                         line_content = f"  {emoji} {name}"
-                        output.append(render_line(
-                            term.bright_cyan(line_content),
-                            line_no
-                        ))
+                        lines[line_no] = term.bright_cyan(line_content)
 
                 # Description
                 if i < 2:
-                    output.append(render_line(
-                        line_no + 1,
-                        dim_cyan(f"       {desc}")
-                    ))
+                    lines[line_no + 1] = dim_cyan(f"       {desc}")
 
             # Summary section
-            output.append(render_line(
-                17,
-                term.magenta("─" * term.width)
-            ))
-
-            output.append(render_line(
-                19,
-                term.bold(f"Sanitize: {'✅' if sanitize else '❌'}  │  History: {'✅' if history else '❌'}")
-            ))
-
-            output.append(render_line(
-                20,
-                dim_cyan("Output: ./backups/")
-            ))
+            lines[17] = term.magenta("─" * term.width)
+            lines[19] = term.bold(f"Sanitize: {'✅' if sanitize else '❌'}  │  History: {'✅' if history else '❌'}")
+            lines[20] = dim_cyan("Output: ./backups/")
 
             # Footer
-            output.append(render_line(
-                term.height - 3,
-                term.magenta("─" * term.width)
-            ))
+            lines[term.height - 3] = term.magenta("─" * term.width)
+            lines[term.height - 2] = dim_cyan("↑↓ Navigate  ·  Space Toggle  ·  Enter Confirm  ·  q Quit")
 
-            output.append(render_line(
-                term.height - 2,
-                dim_cyan("↑↓ Navigate  ·  Space Toggle  ·  Enter Confirm  ·  q Quit")
-            ))
-
-            # Print all output
-            print("".join(output), end="", flush=True)
+            # Print screen
+            print(term.home + term.clear + build_screen(lines), end="", flush=True)
 
             # Get input
             key = term.inkey(timeout=0.1)
@@ -181,93 +136,43 @@ def show_main_menu() -> tuple[bool, bool]:
 def show_progress():
     """Show backup progress screen."""
     with term.fullscreen(), term.cbreak(), term.hidden_cursor():
-        output = []
+        lines = {
+            0: term.bold_magenta("❯ CCBACKUP"),
+            2: term.bold(term.yellow("─ BACKING UP ─")),
+            5: term.bright_cyan("Preparing backup..."),
+            7: dim_cyan("⏳ Please wait"),
+        }
 
-        output.append(render_line(
-            term.bold_magenta("❯ CCBACKUP"),
-            0
-        ))
-
-        output.append(render_line(
-            term.bold(term.yellow("─ BACKING UP ─")),
-            2
-        ))
-
-        output.append(render_line(
-            term.bright_cyan("Preparing backup..."),
-            5
-        ))
-
-        output.append(render_line(
-            dim_cyan("⏳ Please wait"),
-            7
-        ))
-
-        print(term.home + term.clear + "".join(output), end="", flush=True)
+        print(term.home + term.clear + build_screen(lines), end="", flush=True)
 
 
 def show_result_dialog(success: bool, message: str, size: float = 0):
     """Show result dialog."""
     with term.fullscreen(), term.cbreak(), term.hidden_cursor():
-        output = []
-
-        output.append(render_line(
-            0,
-            term.bold_magenta("❯ CCBACKUP")
-        ))
+        lines = {
+            0: term.bold_magenta("❯ CCBACKUP"),
+        }
 
         if success:
-            output.append(render_line(
-                2,
-                term.bold(term.green("─ SUCCESS ✅ ─"))
-            ))
-            output.append(render_line(
-                4,
-                term.bright_cyan("Backup completed successfully!")
-            ))
+            lines[2] = term.bold(term.green("─ SUCCESS ✅ ─"))
+            lines[4] = term.bright_cyan("Backup completed successfully!")
 
             filename = Path(message).name
-            output.append(render_line(
-                6,
-                term.yellow(filename)
-            ))
-            output.append(render_line(
-                7,
-                dim_cyan(f"Size: {size:.0f} KB")
-            ))
-
-            output.append(render_line(
-                9,
-                term.bright_green("✅ Ready for migration")
-            ))
+            lines[6] = term.yellow(filename)
+            lines[7] = dim_cyan(f"Size: {size:.0f} KB")
+            lines[9] = term.bright_green("✅ Ready for migration")
         else:
-            output.append(render_line(
-                2,
-                term.bold(term.red("─ FAILED ❌ ─"))
-            ))
-            output.append(render_line(
-                4,
-                term.bright_cyan("Backup failed")
-            ))
+            lines[2] = term.bold(term.red("─ FAILED ❌ ─"))
+            lines[4] = term.bright_cyan("Backup failed")
 
             msg_lines = message.split("\n")
             for i, line in enumerate(msg_lines[:5]):
-                output.append(render_line(
-                    6 + i,
-                    term.red(line[:term.width - 1])
-                ))
+                lines[6 + i] = term.red(line[:term.width - 1])
 
-        output.append(render_line(
-            term.height - 2,
-            term.magenta("─" * term.width)
-        ))
+        lines[term.height - 2] = term.magenta("─" * term.width)
+        lines[term.height - 1] = dim_cyan("Press any key to exit")
 
-        output.append(render_line(
-            term.height - 1,
-            dim_cyan("Press any key to exit")
-        ))
-
-        print("".join(output), end="", flush=True)
+        print(term.home + term.clear + build_screen(lines), end="", flush=True)
         term.inkey()
 
 
@@ -302,31 +207,21 @@ def main():
 
     except KeyboardInterrupt:
         with term.fullscreen(), term.cbreak(), term.hidden_cursor():
-            output = []
-            output.append(render_line(
-                0,
-                term.bold_magenta("❯ CCBACKUP")
-            ))
-            output.append(render_line(
-                term.height // 2,
-                dim_cyan("Cancelled.")
-            ))
-            print(term.home + term.clear + "".join(output), end="", flush=True)
+            lines = {
+                0: term.bold_magenta("❯ CCBACKUP"),
+                term.height // 2: dim_cyan("Cancelled."),
+            }
+            print(term.home + term.clear + build_screen(lines), end="", flush=True)
             import time
             time.sleep(1)
         return 0
     except Exception as e:
         with term.fullscreen(), term.cbreak(), term.hidden_cursor():
-            output = []
-            output.append(render_line(
-                0,
-                term.bold_magenta("❯ CCBACKUP")
-            ))
-            output.append(render_line(
-                term.height // 2,
-                term.red(f"Error: {e}")
-            ))
-            print(term.home + term.clear + "".join(output), end="", flush=True)
+            lines = {
+                0: term.bold_magenta("❯ CCBACKUP"),
+                term.height // 2: term.red(f"Error: {e}"),
+            }
+            print(term.home + term.clear + build_screen(lines), end="", flush=True)
             import time
             time.sleep(2)
         return 1
