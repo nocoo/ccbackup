@@ -1,8 +1,8 @@
 # Claude Code Backup Tool - TUI Version
 # Python 3.10+
 
-# TUI Framework
-textual>=0.40.0
+# Interactive CLI/TUI
+questionary>=2.0.0
 
-# Rich text formatting (already installed by Textual)
+# Rich text formatting
 rich>=13.0.0

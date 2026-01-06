@@ -1,151 +1,220 @@
-# Simple TUI Interface
+# Interactive TUI - Questionary + Rich
 
-A minimal, centered dialog-style interface for Claude Code backup.
+Simple, clean interactive backup wizard inspired by Ink's React component model.
 
-## UI Layout
+## Architecture
 
 ```
 ┌─────────────────────────────────────────┐
-│    Claude Code Backup Tool             │
+│    Claude Code Backup Tool              │
+│    Interactive backup wizard            │
 ├─────────────────────────────────────────┤
 │                                         │
-│        🔧 Backup Options               │
+│  Host: MBP16M426LZ                      │
+│  User: nocoo                            │
 │                                         │
-│         MBP16M426LZ / nocoo             │
+│  🔧 Backup Options                      │
 │                                         │
-│   ☐ Sanitize secrets                   │
+│  ? Sanitize secrets (replace with       │
+│    placeholders)? (y/n) [n]: _          │
 │                                         │
-│   ☐ Include history                    │
+│  ? Include history and session data?    │
+│    (y/n) [n]: _                         │
 │                                         │
-│   ┌─────────────────────────┐           │
-│   │  💾 Backup              │           │
-│   ├─────────────────────────┤           │
-│   │  ❌ Quit                │           │
-│   └─────────────────────────┘           │
+│  Sanitize: ❌ No                        │
+│  History:  ✅ Yes                       │
+│  Output:   ./backups/                   │
 │                                         │
-│   ✅ Saved: ccbackup_*.zip (45KB)       │
+│  ? Start backup? (Y/n): _               │
+│                                         │
+│  ⏳ Backing up...                       │
+│                                         │
+│  ┌──────────────────────────────────┐   │
+│  │ ✅ Backup Completed              │   │
+│  │                                  │   │
+│  │ ccbackup_MBP16_nocoo_20260106... │   │
+│  │ 45 KB                            │   │
+│  └──────────────────────────────────┘   │
+│                                         │
+│  Done!                                  │
 │                                         │
 └─────────────────────────────────────────┘
-
-Keyboard: b=Backup  d=Dark  q=Quit
 ```
+
+## UI Flow
+
+1. **Banner** - Welcome message and app title
+2. **System Info** - Show hostname and username
+3. **Options** - Ask for backup preferences
+4. **Summary** - Show what will be backed up
+5. **Confirm** - Ask to start backup
+6. **Progress** - Show "Backing up..." status
+7. **Result** - Show success or error with details
 
 ## Features
 
-- 🎯 **Centered window** - Easy to focus on
-- ⚙️ **Two simple options**:
-  - Sanitize secrets (replace with placeholders)
-  - Include history (larger backup with session data)
-- 🔲 **Toggle switches** - Just click or use keyboard
-- 💾 **Action buttons** - Backup and Quit
-- 📊 **Status display** - Shows progress or result
-- 🌙 **Dark mode** - Press 'd' to toggle
+✨ **Simple & Clean**
+- Question-based interface (like Ink)
+- No complex layouts
+- Easy to follow
+
+🎨 **Beautiful Output**
+- Rich panels and tables
+- Colored text and emojis
+- Professional appearance
+
+⚡ **Fast & Responsive**
+- Minimal dependencies
+- Quick startup
+- No loading delays
+
+🤖 **Intelligent Defaults**
+- Auto-enter on confirmations
+- Sensible defaults (No/No)
+- Easy to skip with Enter
+
+## Comparison: Questionary + Rich vs Textual vs Ink
+
+| Feature | Questionary + Rich | Textual | Ink |
+|---------|-------------------|---------|-----|
+| Complexity | Low ✅ | High | Medium |
+| Code lines | ~100 | 350+ | Various |
+| Learning curve | Easy ✅ | Steep | Medium |
+| Dependencies | 2 light ✅ | 1 heavy | Many |
+| Flexibility | High ✅ | Very high | High |
+| Use case | **Simple CLI** ✅ | Complex TUI | Rich UIs |
+| Python support | ✅ | ✅ | ❌ |
+
+## Why Questionary + Rich?
+
+1. **Inspired by Ink** - Question/answer flow like React components
+2. **Simple to code** - Just plain Python functions
+3. **Clean output** - Rich library handles all styling
+4. **Easy to maintain** - No complex state management
+5. **Lightweight** - Two small, focused libraries
+6. **Perfect fit** - For this use case (wizard-style backup)
+
+## Code Structure
+
+```python
+# 1. Show banner (display only)
+show_banner()
+
+# 2. Show system info (display only)
+show_system_info()
+
+# 3. Ask options (interactive)
+sanitize, include_history = ask_options()
+
+# 4. Show summary (display only)
+confirm_backup(sanitize, include_history)
+
+# 5. Do backup (blocking operation)
+perform_backup(sanitize, include_history)
+```
+
+No state management, no event handlers, just linear flow!
 
 ## Usage
 
 ```bash
-# Start the TUI
+# Run interactive backup
 python3 ccbackup_tui.py
 
-# Or with pipe
-python3 ccbackup_tui.py 2>/dev/null
+# Or with the CLI
+python3 ccbackup.py --sanitize --include-history
 ```
 
-## Keyboard Shortcuts
+## Keyboard Usage
 
-| Key | Action |
-|-----|--------|
-| `b` | Start backup |
-| `d` | Toggle dark mode |
-| `q` | Quit app |
-| `Tab` | Navigate between options |
-| `Space` | Toggle switch / Press button |
-| `Enter` | Press focused button |
-
-## What Each Option Does
-
-### Sanitize Secrets
-- **Off** (default): Full backup with all settings
-- **On**: Replaces API tokens with `<YOUR_KEY>` placeholders
-- **Use case**: Safe to share or back up to cloud
-
-### Include History
-- **Off** (default): ~20 KB backup (fast)
-- **On**: ~30 MB backup (includes session history)
-- **Use case**: Complete migration between machines
-
-## Output
-
-After clicking "Backup":
-
-✅ **Success:**
 ```
-✅ Saved: ccbackup_MBP16_nocoo_20260106_073855.zip (45KB)
+Space / y     → Yes
+n / Backspace → No
+Enter         → Confirm / Use default
+Ctrl+C        → Cancel / Exit
 ```
 
-❌ **Error:**
-```
-❌ Failed: Cannot create backup directory
-```
+## Example Interaction
 
-⏳ **In Progress:**
-```
+```bash
+$ python3 ccbackup_tui.py
+
+┌─────────────────────────────────────┐
+│  Claude Code Backup Tool            │
+│  Interactive backup wizard          │
+└─────────────────────────────────────┘
+
+Host: MBP16M426LZ
+User: nocoo
+
+🔧 Backup Options
+
+? Sanitize secrets (replace with placeholders)? (y/n) [n]: n
+? Include history and session data? (y/n) [n]: y
+
+Sanitize: ❌ No
+History:  ✅ Yes
+Output:   ./backups/
+
+? Start backup? (Y/n): y
+
 ⏳ Backing up...
+
+┌──────────────────────────────────────┐
+│ ✅ Backup Completed                  │
+│                                      │
+│ ccbackup_MBP16M426LZ_nocoo_20260106  │
+│ 45 KB                                │
+└──────────────────────────────────────┘
+
+⚠️  Backup contains sensitive information - store securely!
+
+Done!
 ```
 
-## Backup Location
+## Files Backed Up
 
-All backups go to: `./backups/`
-
-Example:
-```
-backups/
-└── ccbackup_MBP16M426LZ_nocoo_20260106_073855.zip
-```
-
-## File Format
-
-Inside the ZIP file:
-```
-ccbackup_*.zip
-├── manifest.json          # Metadata
-├── CLAUDE.md             # Global prompts
-├── settings.json         # User config (with or without secrets)
-├── skills/               # Custom skills
-│   ├── task-notifier/
-│   └── planning-with-files/
-├── plugins/
-│   ├── installed_plugins.json
-│   └── known_marketplaces.json
-└── (optional)
-    ├── history.jsonl     # Command history
-    └── projects/         # Session history
-```
+Each backup includes:
+- `CLAUDE.md` - Global prompts
+- `settings.json` - User config
+- `skills/` - Custom skills
+- `plugins/` - Plugin info
+- (optional) `history.jsonl` - Command history
+- (optional) `projects/` - Session data
+- `manifest.json` - Backup metadata
 
 ## Tips
 
-1. **First time?** Leave options unchecked, just click "Backup"
-2. **Sharing backup?** Enable "Sanitize secrets" first
-3. **Moving machines?** Enable "Include history" for complete migration
-4. **Large backup?** "Include history" adds ~30 MB - only use if needed
-5. **Check contents:** View `manifest.json` inside the ZIP for details
+1. **Fastest way**: Just press Enter 3 times → creates basic backup
+2. **Complete backup**: Answer `y` to history question
+3. **Safe to share**: Enable sanitize option before backing up to cloud
+4. **Check output**: Look in `./backups/` for the ZIP file
 
 ## Troubleshooting
 
-- **Window not centered?** Try resizing terminal
-- **Text cut off?** Make terminal wider/taller
-- **Backup fails?** Check `./backups/` directory exists and is writable
-- **Can't see output?** Status will show at bottom of window
+| Issue | Solution |
+|-------|----------|
+| TUI won't start | `pip3 install -r requirements.txt` |
+| No backup output | Check `./backups/` directory exists |
+| Backup failed | Run with CLI: `python3 ccbackup.py --list` |
+| Terminal garbled | Resize terminal or clear screen |
 
-## Comparison: TUI vs CLI
+## Benefits Over Previous Versions
 
-| Feature | TUI | CLI |
-|---------|-----|-----|
-| Easy to use | ✅ | ⚙️ |
-| Fast | ✅ | ✅ |
-| Dependencies | Textual | None |
-| Scripting | ❌ | ✅ |
-| Automation | ❌ | ✅ |
-| Pretty output | ✅ | ⚙️ |
+✅ **vs Textual:**
+- 50% less code
+- Simpler to understand
+- No complex layouts
+- Lighter dependencies
 
-Choose TUI for interactive use, CLI for automation/scripts.
+✅ **vs Ink (TypeScript):**
+- Same question-based flow
+- Pure Python
+- Minimal dependencies
+- Easy to maintain
+
+✅ **vs Raw CLI:**
+- More user-friendly
+- Better visual feedback
+- Interactive prompts
+- Professional appearance

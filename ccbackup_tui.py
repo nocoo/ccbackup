@@ -1,151 +1,100 @@
 #!/usr/bin/env python3
 """
-Claude Code Configuration Backup Tool - TUI Version (Simple)
+Claude Code Configuration Backup Tool - TUI Version
 
-A minimal terminal user interface for backing up Claude Code configuration files.
-Built with Textual framework.
+Interactive terminal UI using Questionary + Rich.
+Inspired by Ink (React-based TUI) architecture.
 """
 
-import asyncio
+import sys
 from pathlib import Path
 
-from textual.app import App, ComposeResult
-from textual.binding import Binding
-from textual.containers import Vertical
-from textual.widgets import Button, Footer, Header, Label, Static, Switch
-from textual.worker import Worker, WorkerState
+import questionary
+from rich.console import Console
+from rich.panel import Panel
+from rich.table import Table
 
-# Import core backup functions from ccbackup
 from ccbackup import (
     create_backup,
     get_default_backup_path,
     get_machine_info,
 )
 
+console = Console()
 
-class SimpleBackupApp(App):
-    """Claude Code Backup Tool - Simple TUI Application."""
 
-    TITLE = "Claude Code Backup Tool"
-    SUB_TITLE = "Backup Configuration"
+def show_banner():
+    """Show welcome banner."""
+    banner = Panel(
+        "[bold cyan]Claude Code Backup Tool[/bold cyan]\n"
+        "[dim]Interactive backup wizard[/dim]",
+        border_style="cyan",
+        padding=(1, 2),
+    )
+    console.print(banner)
 
-    CSS = """
-    Screen {
-        align: center middle;
-    }
 
-    #main-box {
-        width: 50;
-        height: auto;
-        border: solid $primary;
-        padding: 1;
-    }
+def show_system_info():
+    """Display system information."""
+    hostname, username = get_machine_info()
 
-    #title {
-        text-align: center;
-        text-style: bold;
-        color: $text;
-        margin-bottom: 1;
-    }
+    info_table = Table(show_header=False, box=None, padding=(0, 1))
+    info_table.add_row("[dim]Host:[/dim]", f"[cyan]{hostname}[/cyan]")
+    info_table.add_row("[dim]User:[/dim]", f"[cyan]{username}[/cyan]")
 
-    #info {
-        text-align: center;
-        color: $text-muted;
-        margin-bottom: 1;
-    }
+    console.print(info_table)
+    console.print()
 
-    .option-row {
-        height: 3;
-        margin-bottom: 1;
-    }
 
-    .option-row Switch {
-        width: 1fr;
-    }
-
-    #button-row {
-        width: 100%;
-        height: auto;
-        margin-top: 1;
-    }
-
-    #button-row Button {
-        width: 1fr;
-        margin-bottom: 1;
-    }
-
-    #status {
-        text-align: center;
-        color: $text-muted;
-        margin-top: 1;
-        height: 3;
-    }
+def ask_options() -> tuple[bool, bool]:
     """
+    Ask user for backup options.
+    Returns (sanitize, include_history) tuple.
+    """
+    console.print("[bold]🔧 Backup Options[/bold]\n")
 
-    BINDINGS = [
-        Binding("q", "quit", "Quit"),
-        Binding("b", "backup", "Backup"),
-        Binding("d", "toggle_dark", "Dark"),
-    ]
+    sanitize = questionary.confirm(
+        "Sanitize secrets (replace with placeholders)?",
+        default=False,
+        auto_enter=True,
+    ).ask()
 
-    def compose(self) -> ComposeResult:
-        yield Header(show_clock=False)
+    if sanitize is None:
+        raise KeyboardInterrupt
 
-        with Vertical(id="main-box"):
-            yield Label("🔧 Backup Options", id="title")
+    include_history = questionary.confirm(
+        "Include history and session data?",
+        default=False,
+        auto_enter=True,
+    ).ask()
 
-            hostname, username = get_machine_info()
-            yield Label(f"{hostname} / {username}", id="info")
+    if include_history is None:
+        raise KeyboardInterrupt
 
-            with Vertical(classes="option-row"):
-                yield Switch(id="sanitize", value=False)
-                yield Label("Sanitize secrets", classes="option-label")
+    return sanitize, include_history
 
-            with Vertical(classes="option-row"):
-                yield Switch(id="include-history", value=False)
-                yield Label("Include history", classes="option-label")
 
-            with Vertical(id="button-row"):
-                yield Button("💾 Backup", id="backup", variant="primary")
-                yield Button("❌ Quit", id="quit", variant="error")
+def confirm_backup(sanitize: bool, include_history: bool) -> bool:
+    """Show summary and confirm backup."""
+    console.print()
+    summary = Table(show_header=False, box=None, padding=(0, 1))
+    summary.add_row("[dim]Sanitize:[/dim]", "✅ Yes" if sanitize else "❌ No")
+    summary.add_row("[dim]History:[/dim]", "✅ Yes" if include_history else "❌ No")
+    summary.add_row("[dim]Output:[/dim]", f"[cyan]{Path('.').joinpath('backups')}[/cyan]")
 
-            yield Label("", id="status")
+    console.print(summary)
+    console.print()
 
-        yield Footer()
+    confirm = questionary.confirm("Start backup?", default=True, auto_enter=True).ask()
 
-    def on_button_pressed(self, event: Button.Pressed) -> None:
-        """Handle button presses."""
-        button_id = event.button.id
+    return confirm if confirm is not None else False
 
-        if button_id == "quit":
-            self.action_quit()
-        elif button_id == "backup":
-            self.action_backup()
 
-    def action_toggle_dark(self) -> None:
-        """Toggle dark mode."""
-        self.dark = not self.dark
-
-    def action_quit(self) -> None:
-        """Quit the application."""
-        self.exit()
-
-    def action_backup(self) -> None:
-        """Start the backup process."""
-        self.run_worker(self._do_backup(), exclusive=True)
-
-    async def _do_backup(self) -> None:
-        """Perform the backup operation."""
-        status = self.query_one("#status", Label)
-        sanitize = self.query_one("#sanitize", Switch).value
-        include_history = self.query_one("#include-history", Switch).value
-
+def perform_backup(sanitize: bool, include_history: bool) -> bool:
+    """Perform the backup operation."""
+    with console.status("[bold cyan]⏳ Backing up...[/bold cyan]", spinner="dots"):
         try:
-            status.update("⏳ Backing up...")
-
             output_path = get_default_backup_path()
-
-            # Perform backup
             success, message = create_backup(
                 output_path,
                 include_history=include_history,
@@ -154,21 +103,72 @@ class SimpleBackupApp(App):
 
             if success:
                 backup_size = Path(message).stat().st_size / 1024
-                status.update(f"✅ Saved: {Path(message).name} ({backup_size:.0f}KB)")
-                self.notify("Backup completed!", title="Success")
+                filename = Path(message).name
+
+                result_panel = Panel(
+                    f"[green]✅ Backup Completed[/green]\n\n"
+                    f"[cyan]{filename}[/cyan]\n"
+                    f"[dim]{backup_size:.0f} KB[/dim]",
+                    border_style="green",
+                    padding=(1, 2),
+                )
+                console.print(result_panel)
+
+                if not sanitize:
+                    console.print(
+                        "\n[yellow]⚠️  Backup contains sensitive information - store securely![/yellow]"
+                    )
+
+                return True
             else:
-                status.update(f"❌ Failed: {message}")
-                self.notify(f"Error: {message}", title="Error", severity="error")
+                error_panel = Panel(
+                    f"[red]❌ Backup Failed[/red]\n\n{message}",
+                    border_style="red",
+                    padding=(1, 2),
+                )
+                console.print(error_panel)
+                return False
 
         except Exception as e:
-            status.update(f"❌ Error: {e}")
-            self.notify(str(e), title="Error", severity="error")
+            error_panel = Panel(
+                f"[red]❌ Error[/red]\n\n{e}",
+                border_style="red",
+                padding=(1, 2),
+            )
+            console.print(error_panel)
+            return False
 
 
 def main():
-    """Run the TUI application."""
-    app = SimpleBackupApp()
-    app.run()
+    """Run the interactive backup wizard."""
+    try:
+        show_banner()
+        show_system_info()
+
+        # Ask for options
+        sanitize, include_history = ask_options()
+
+        # Confirm before backup
+        if not confirm_backup(sanitize, include_history):
+            console.print("[dim]Cancelled.[/dim]")
+            return
+
+        # Perform backup
+        success = perform_backup(sanitize, include_history)
+
+        if success:
+            console.print("\n[green]Done![/green]")
+            sys.exit(0)
+        else:
+            console.print("\n[red]Failed![/red]")
+            sys.exit(1)
+
+    except KeyboardInterrupt:
+        console.print("\n[dim]Cancelled by user.[/dim]")
+        sys.exit(0)
+    except Exception as e:
+        console.print(f"\n[red]Error: {e}[/red]")
+        sys.exit(1)
 
 
 if __name__ == "__main__":

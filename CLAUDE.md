@@ -34,20 +34,20 @@ python3 ccbackup.py --scan
 python3 ccbackup.py --list
 ```
 
-### TUI (Requires Textual)
+### TUI (Questionary + Rich)
 
 ```bash
 pip3 install -r requirements.txt
 python3 ccbackup_tui.py
 ```
 
-Features a beautiful terminal UI with:
-- ⚙️ Options panel (Sanitize, Include history)
-- 📋 System info display
-- 📜 Real-time output log
-- 📊 Progress bar
-- 🚀 Action buttons (List, Scan, Backup, Quit)
-- ⌨️ Keyboard shortcuts
+Interactive wizard-style interface inspired by Ink (React TUI):
+- 📝 Question-based interaction
+- 🎨 Beautiful Rich formatting
+- 🔧 Simple backup options (Sanitize, Include history)
+- 📊 System info display
+- ⏳ Progress feedback
+- ✅ Result confirmation
 
 ## Output
 
