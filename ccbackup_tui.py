@@ -24,12 +24,9 @@ def render_line(content: str, line: int) -> str:
     return term.move(line, 0) + content
 
 
-def pad_right(text: str, width: int) -> str:
-    """Pad text to right with spaces."""
-    # Remove ANSI codes for length calculation
-    clean_text = term.strip_seqs(text)
-    padding = max(0, width - len(clean_text))
-    return text + " " * padding
+def dim_cyan(text: str) -> str:
+    """Apply dim cyan style to text."""
+    return term.dim(term.cyan(text))
 
 
 def show_main_menu() -> tuple[bool, bool]:
@@ -123,7 +120,7 @@ def show_main_menu() -> tuple[bool, bool]:
                 # Description
                 if i < 2:
                     output.append(render_line(
-                        term.dim_cyan(f"       {desc}"),
+                        dim_cyan(f"       {desc}"),
                         line_no + 1
                     ))
 
@@ -139,7 +136,7 @@ def show_main_menu() -> tuple[bool, bool]:
             ))
 
             output.append(render_line(
-                term.dim_cyan("Output: ./backups/"),
+                dim_cyan("Output: ./backups/"),
                 20
             ))
 
@@ -150,7 +147,7 @@ def show_main_menu() -> tuple[bool, bool]:
             ))
 
             output.append(render_line(
-                term.dim_cyan("↑↓ Navigate  ·  Space Toggle  ·  Enter Confirm  ·  q Quit"),
+                dim_cyan("↑↓ Navigate  ·  Space Toggle  ·  Enter Confirm  ·  q Quit"),
                 term.height - 2
             ))
 
@@ -202,7 +199,7 @@ def show_progress():
         ))
 
         output.append(render_line(
-            term.dim_cyan("⏳ Please wait"),
+            dim_cyan("⏳ Please wait"),
             7
         ))
 
@@ -235,7 +232,7 @@ def show_result_dialog(success: bool, message: str, size: float = 0):
                 6
             ))
             output.append(render_line(
-                term.dim_cyan(f"Size: {size:.0f} KB"),
+                dim_cyan(f"Size: {size:.0f} KB"),
                 7
             ))
 
@@ -266,7 +263,7 @@ def show_result_dialog(success: bool, message: str, size: float = 0):
         ))
 
         output.append(render_line(
-            term.dim_cyan("Press any key to exit"),
+            dim_cyan("Press any key to exit"),
             term.height - 1
         ))
 
@@ -311,7 +308,7 @@ def main():
                 0
             ))
             output.append(render_line(
-                term.dim_cyan("Cancelled."),
+                dim_cyan("Cancelled."),
                 term.height // 2
             ))
             print(term.home + term.clear + "".join(output), end="", flush=True)
