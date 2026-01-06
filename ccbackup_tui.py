@@ -2,7 +2,7 @@
 """
 Claude Code Configuration Backup Tool - TUI Version
 
-Centered window dialog using Blessed library (inspired by cc-mirror).
+Full-screen terminal UI inspired by cc-mirror with colors, emojis, and rich formatting.
 """
 
 import sys
@@ -19,180 +19,140 @@ from ccbackup import (
 term = Terminal()
 
 
-class Window:
-    """A centered window dialog."""
-
-    def __init__(self, width=50, height=20):
-        self.width = width
-        self.height = height
-        self.x = (term.width - width) // 2
-        self.y = (term.height - height) // 2
-
-    def draw_box(self):
-        """Draw the window border."""
-        output = []
-
-        # Top border
-        output.append(
-            term.move(self.y, self.x)
-            + "┏" + "━" * (self.width - 2) + "┓"
-        )
-
-        # Side borders
-        for i in range(1, self.height - 1):
-            output.append(
-                term.move(self.y + i, self.x) + "┃" + " " * (self.width - 2) + "┃"
-            )
-
-        # Bottom border
-        output.append(
-            term.move(self.y + self.height - 1, self.x)
-            + "┗" + "━" * (self.width - 2) + "┛"
-        )
-
-        return "".join(output)
-
-    def text(self, line: int, content: str, centered: bool = False) -> str:
-        """Position text inside the window."""
-        if centered:
-            padding = (self.width - 2 - len(content)) // 2
-            content = " " * padding + content
-        else:
-            content = content[: self.width - 3]
-
-        return term.move(self.y + line, self.x + 1) + content
-
-    def button(self, line: int, text: str, selected: bool = False) -> str:
-        """Draw a button."""
-        btn = f"[ {text} ]"
-        if selected:
-            btn = term.reverse(btn)
-        padding = (self.width - 2 - len(btn)) // 2
-        content = " " * padding + btn + " " * (self.width - 3 - padding - len(btn))
-        return term.move(self.y + line, self.x + 1) + content
+def render_line(content: str, line: int) -> str:
+    """Render a line at absolute position."""
+    return term.move(line, 0) + content
 
 
-def show_backup_dialog() -> tuple[bool, bool]:
-    """Show the main backup dialog."""
+def pad_right(text: str, width: int) -> str:
+    """Pad text to right with spaces."""
+    # Remove ANSI codes for length calculation
+    clean_text = term.strip_seqs(text)
+    padding = max(0, width - len(clean_text))
+    return text + " " * padding
+
+
+def show_main_menu() -> tuple[bool, bool]:
+    """Show main interactive menu inspired by cc-mirror."""
     with term.fullscreen(), term.cbreak(), term.hidden_cursor():
-        window = Window(width=52, height=16)
-
         hostname, username = get_machine_info()
-        selected_option = 0  # 0=sanitize, 1=history, 2=backup, 3=quit
-
-        while True:
-            # Clear screen
-            print(term.home + term.clear, end="", flush=False)
-
-            # Draw window
-            output = [window.draw_box()]
-
-            # Title
-            output.append(window.text(1, "🔧 Backup Options", centered=True))
-
-            # System info
-            output.append(window.text(3, f"{hostname} / {username}", centered=True))
-
-            # Options
-            sanitize_text = "☑ Sanitize secrets" if selected_option == 0 else "☐ Sanitize secrets"
-            history_text = "☑ Include history" if selected_option == 1 else "☐ Include history"
-
-            output.append(window.text(5, sanitize_text, centered=True))
-            output.append(window.text(6, history_text, centered=True))
-
-            # Buttons
-            backup_selected = selected_option == 2
-            quit_selected = selected_option == 3
-
-            output.append(window.button(8, "💾 Backup", backup_selected))
-            output.append(window.button(9, "❌ Quit", quit_selected))
-
-            # Instructions
-            output.append(
-                window.text(11, "↑↓ Navigate  Space Toggle  Enter Confirm", centered=False)
-            )
-
-            # Print all output
-            print("".join(output), end="", flush=True)
-
-            # Get input
-            key = term.inkey()
-
-            if key.code == term.KEY_UP:
-                selected_option = (selected_option - 1) % 4
-            elif key.code == term.KEY_DOWN:
-                selected_option = (selected_option + 1) % 4
-            elif key == " ":  # Space to toggle
-                if selected_option == 0 or selected_option == 1:
-                    selected_option = (selected_option + 1) % 2
-            elif key.code == term.KEY_ENTER or key == "q":
-                if selected_option == 3:  # Quit
-                    raise KeyboardInterrupt
-                elif selected_option == 2:  # Backup
-                    sanitize = selected_option >= 0
-                    include_history = selected_option >= 1
-                    return sanitize, include_history
-            elif key in ("q", "Q"):
-                raise KeyboardInterrupt
-
-
-def show_options_dialog() -> tuple[bool, bool]:
-    """Show dialog to select backup options."""
-    with term.fullscreen(), term.cbreak(), term.hidden_cursor():
-        window = Window(width=52, height=18)
 
         sanitize = False
         history = False
-        selected_option = 0  # 0=sanitize, 1=history, 2=backup, 3=quit
+        selected = 0  # 0=sanitize, 1=history, 2=backup, 3=quit
 
         while True:
-            # Clear screen
             print(term.home + term.clear, end="", flush=False)
 
-            # Draw window
-            output = [window.draw_box()]
+            output = []
 
-            # Title
-            output.append(window.text(1, "🔧 Backup Options", centered=True))
+            # Header with branding
+            output.append(render_line(
+                term.bold_magenta("❯ CCBACKUP"),
+                0
+            ))
+
+            # Title section
+            output.append(render_line(
+                term.bold(term.yellow("─ BACKUP ─")),
+                2
+            ))
+
+            output.append(render_line(
+                term.bright_cyan("Claude Code Configuration Backup"),
+                3
+            ))
+            output.append(render_line(
+                term.yellow("Backup your settings, prompts, and skills"),
+                4
+            ))
+
+            # Decorative line
+            output.append(render_line(
+                term.magenta("─" * 60 + "◆" + "─" * (term.width - 62)),
+                5
+            ))
 
             # System info
-            hostname, username = get_machine_info()
-            output.append(window.text(3, f"{hostname} / {username}", centered=True))
+            output.append(render_line(
+                term.bold(f"★ System: {hostname} / {username}"),
+                7
+            ))
 
-            # Options with checkboxes
-            sanitize_check = "☑" if sanitize else "☐"
-            history_check = "☑" if history else "☐"
+            # Menu options
+            options = [
+                ("Sanitize secrets", "🔐", "Replace API tokens & secrets"),
+                ("Include history", "📚", "Include session history data"),
+                ("Backup", "💾", "Start backup process"),
+                ("Quit", "❌", "Exit application"),
+            ]
 
-            sanitize_line = f"{sanitize_check} Sanitize secrets"
-            history_line = f"{history_check} Include history"
+            for i, (name, emoji, desc) in enumerate(options):
+                line_no = 9 + i * 2
 
-            if selected_option == 0:
-                sanitize_line = term.reverse(sanitize_line)
-            if selected_option == 1:
-                history_line = term.reverse(history_line)
+                # Highlight selected option
+                if i == selected:
+                    if i < 2:  # Toggles
+                        check = "☑" if (sanitize if i == 0 else history) else "☐"
+                        line_content = f"  {emoji} {check} {name}"
+                        output.append(render_line(
+                            term.reverse(term.bold(line_content)),
+                            line_no
+                        ))
+                    else:  # Buttons
+                        line_content = f"  {emoji} {name}"
+                        output.append(render_line(
+                            term.reverse(term.bold(line_content)),
+                            line_no
+                        ))
+                else:
+                    if i < 2:  # Toggles
+                        check = "☑" if (sanitize if i == 0 else history) else "☐"
+                        line_content = f"  {emoji} {check} {name}"
+                        output.append(render_line(
+                            term.bright_cyan(line_content),
+                            line_no
+                        ))
+                    else:  # Buttons
+                        line_content = f"  {emoji} {name}"
+                        output.append(render_line(
+                            term.bright_cyan(line_content),
+                            line_no
+                        ))
 
-            output.append(window.text(5, sanitize_line, centered=True))
-            output.append(window.text(6, history_line, centered=True))
+                # Description
+                if i < 2:
+                    output.append(render_line(
+                        term.dim_cyan(f"       {desc}"),
+                        line_no + 1
+                    ))
 
-            # Summary
-            output.append(window.text(8, "─" * 48, centered=False))
-            output.append(
-                window.text(9, f"Sanitize: {'✅' if sanitize else '❌'}", centered=True)
-            )
-            output.append(
-                window.text(10, f"History: {'✅' if history else '❌'}", centered=True)
-            )
-            output.append(window.text(11, f"Output: ./backups/", centered=True))
+            # Summary section
+            output.append(render_line(
+                term.magenta("─" * term.width),
+                17
+            ))
 
-            # Buttons
-            backup_selected = selected_option == 2
-            quit_selected = selected_option == 3
+            output.append(render_line(
+                term.bold(f"Sanitize: {'✅' if sanitize else '❌'}  │  History: {'✅' if history else '❌'}"),
+                19
+            ))
 
-            output.append(window.button(13, "💾 Backup", backup_selected))
-            output.append(window.button(14, "❌ Quit", quit_selected))
+            output.append(render_line(
+                term.dim_cyan("Output: ./backups/"),
+                20
+            ))
 
-            # Instructions
-            output.append(window.text(16, "↑↓ Navigate  Space Toggle  Enter Confirm", centered=False))
+            # Footer
+            output.append(render_line(
+                term.magenta("─" * term.width),
+                term.height - 3
+            ))
+
+            output.append(render_line(
+                term.dim_cyan("↑↓ Navigate  ·  Space Toggle  ·  Enter Confirm  ·  q Quit"),
+                term.height - 2
+            ))
 
             # Print all output
             print("".join(output), end="", flush=True)
@@ -204,102 +164,174 @@ def show_options_dialog() -> tuple[bool, bool]:
                 continue
 
             if key.code == term.KEY_UP:
-                selected_option = (selected_option - 1) % 4
+                selected = (selected - 1) % 4
             elif key.code == term.KEY_DOWN:
-                selected_option = (selected_option + 1) % 4
+                selected = (selected + 1) % 4
             elif key == " ":  # Space to toggle
-                if selected_option == 0:
+                if selected == 0:
                     sanitize = not sanitize
-                elif selected_option == 1:
+                elif selected == 1:
                     history = not history
             elif key.code == term.KEY_ENTER:
-                if selected_option == 3:  # Quit
+                if selected == 3:  # Quit
                     raise KeyboardInterrupt
-                elif selected_option == 2:  # Backup
+                elif selected == 2:  # Backup
                     return sanitize, history
             elif key in ("q", "Q"):
                 raise KeyboardInterrupt
 
 
+def show_progress():
+    """Show backup progress screen."""
+    with term.fullscreen(), term.cbreak(), term.hidden_cursor():
+        output = []
+
+        output.append(render_line(
+            term.bold_magenta("❯ CCBACKUP"),
+            0
+        ))
+
+        output.append(render_line(
+            term.bold(term.yellow("─ BACKING UP ─")),
+            2
+        ))
+
+        output.append(render_line(
+            term.bright_cyan("Preparing backup..."),
+            5
+        ))
+
+        output.append(render_line(
+            term.dim_cyan("⏳ Please wait"),
+            7
+        ))
+
+        print(term.home + term.clear + "".join(output), end="", flush=True)
+
+
 def show_result_dialog(success: bool, message: str, size: float = 0):
     """Show result dialog."""
     with term.fullscreen(), term.cbreak(), term.hidden_cursor():
-        if success:
-            window = Window(width=52, height=14)
-            icon = "✅"
-            title = "Backup Completed"
-            color = term.green
-        else:
-            window = Window(width=52, height=14)
-            icon = "❌"
-            title = "Backup Failed"
-            color = term.red
+        output = []
 
-        output = [window.draw_box()]
-
-        output.append(window.text(1, f"{icon} {title}", centered=True))
-        output.append(window.text(2, "─" * 48, centered=False))
+        output.append(render_line(
+            term.bold_magenta("❯ CCBACKUP"),
+            0
+        ))
 
         if success:
+            output.append(render_line(
+                term.bold(term.green("─ SUCCESS ✅ ─")),
+                2
+            ))
+            output.append(render_line(
+                term.bright_cyan("Backup completed successfully!"),
+                4
+            ))
+
             filename = Path(message).name
-            output.append(window.text(4, filename, centered=True))
-            output.append(window.text(5, f"{size:.0f} KB", centered=True))
-            output.append(window.text(7, "✅ Ready for migration", centered=True))
+            output.append(render_line(
+                term.yellow(filename),
+                6
+            ))
+            output.append(render_line(
+                term.dim_cyan(f"Size: {size:.0f} KB"),
+                7
+            ))
+
+            output.append(render_line(
+                term.bright_green("✅ Ready for migration"),
+                9
+            ))
         else:
-            # Truncate message if too long
+            output.append(render_line(
+                term.bold(term.red("─ FAILED ❌ ─")),
+                2
+            ))
+            output.append(render_line(
+                term.bright_cyan("Backup failed"),
+                4
+            ))
+
             msg_lines = message.split("\n")
             for i, line in enumerate(msg_lines[:5]):
-                output.append(window.text(4 + i, line[: window.width - 3], centered=False))
+                output.append(render_line(
+                    term.red(line[:term.width - 1]),
+                    6 + i
+                ))
 
-        output.append(window.text(11, "Press any key to exit", centered=True))
+        output.append(render_line(
+            term.magenta("─" * term.width),
+            term.height - 2
+        ))
+
+        output.append(render_line(
+            term.dim_cyan("Press any key to exit"),
+            term.height - 1
+        ))
 
         print("".join(output), end="", flush=True)
-
         term.inkey()
 
 
 def main():
     """Run the interactive backup TUI."""
     try:
-        # Show options dialog
-        sanitize, include_history = show_options_dialog()
+        # Show main menu
+        sanitize, include_history = show_main_menu()
 
         # Perform backup
-        with term.fullscreen(), term.cbreak(), term.hidden_cursor():
-            window = Window(width=52, height=10)
+        show_progress()
 
-            output = [window.draw_box()]
-            output.append(window.text(1, "💾 Backing up...", centered=True))
-            output.append(window.text(3, "Preparing files...", centered=True))
-            output.append(window.text(5, "Please wait", centered=True))
+        try:
+            output_path = get_default_backup_path()
+            success, message = create_backup(
+                output_path,
+                include_history=include_history,
+                sanitize=sanitize,
+            )
 
-            print(term.home + term.clear + "".join(output), end="", flush=True)
+            if success:
+                backup_size = Path(message).stat().st_size / 1024
+                show_result_dialog(True, message, backup_size)
+            else:
+                show_result_dialog(False, message)
 
-            try:
-                output_path = get_default_backup_path()
-                success, message = create_backup(
-                    output_path,
-                    include_history=include_history,
-                    sanitize=sanitize,
-                )
+            return 0 if success else 1
 
-                if success:
-                    backup_size = Path(message).stat().st_size / 1024
-                    show_result_dialog(True, message, backup_size)
-                else:
-                    show_result_dialog(False, message)
-
-                return 0 if success else 1
-
-            except Exception as e:
-                show_result_dialog(False, str(e))
-                return 1
+        except Exception as e:
+            show_result_dialog(False, str(e))
+            return 1
 
     except KeyboardInterrupt:
-        print(term.home + term.clear + term.move_y(term.height // 2) + term.center("Cancelled."), flush=True)
+        with term.fullscreen(), term.cbreak(), term.hidden_cursor():
+            output = []
+            output.append(render_line(
+                term.bold_magenta("❯ CCBACKUP"),
+                0
+            ))
+            output.append(render_line(
+                term.dim_cyan("Cancelled."),
+                term.height // 2
+            ))
+            print(term.home + term.clear + "".join(output), end="", flush=True)
+            import time
+            time.sleep(1)
         return 0
     except Exception as e:
-        print(term.home + term.clear + term.move_y(term.height // 2) + term.center(f"Error: {e}"), flush=True)
+        with term.fullscreen(), term.cbreak(), term.hidden_cursor():
+            output = []
+            output.append(render_line(
+                term.bold_magenta("❯ CCBACKUP"),
+                0
+            ))
+            output.append(render_line(
+                term.red(f"Error: {e}"),
+                term.height // 2
+            ))
+            print(term.home + term.clear + "".join(output), end="", flush=True)
+            import time
+            time.sleep(2)
         return 1
 
 
