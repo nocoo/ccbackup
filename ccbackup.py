@@ -26,8 +26,6 @@ import sys
 import zipfile
 from datetime import datetime
 from pathlib import Path
-from typing import Any
-
 
 # Default backup directory
 BACKUP_DIR = Path("./backups")
@@ -77,7 +75,7 @@ SENSITIVE_PATTERNS = [
     (r'"token"\s*:\s*"([^"]+)"', "token"),
     (r'"secret"\s*:\s*"([^"]+)"', "secret"),
     # Generic patterns for sk-ant-* tokens
-    (r'sk-ant-[a-zA-Z0-9\-_]+', "anthropic_token"),
+    (r"sk-ant-[a-zA-Z0-9\-_]+", "anthropic_token"),
 ]
 
 
@@ -158,6 +156,7 @@ def sanitize_content(content: str) -> str:
     sanitized = content
 
     for pattern, name in SENSITIVE_PATTERNS:
+
         def replace_match(m):
             full_match = m.group(0)
             if name == "anthropic_token":
@@ -203,9 +202,7 @@ def scan_for_sensitive(claude_dir: Path) -> dict[str, list[tuple[str, str]]]:
     return results
 
 
-def copy_file_with_sanitize(
-    src: Path, dest: Path, sanitize: bool = False
-) -> None:
+def copy_file_with_sanitize(src: Path, dest: Path, sanitize: bool = False) -> None:
     """Copy a file, optionally sanitizing sensitive content."""
     dest.parent.mkdir(parents=True, exist_ok=True)
 
@@ -221,9 +218,7 @@ def copy_file_with_sanitize(
         shutil.copy2(src, dest)
 
 
-def copy_directory_with_sanitize(
-    src: Path, dest: Path, sanitize: bool = False
-) -> None:
+def copy_directory_with_sanitize(src: Path, dest: Path, sanitize: bool = False) -> None:
     """Copy a directory recursively, optionally sanitizing sensitive content."""
     if not src.exists() or not src.is_dir():
         return
@@ -270,9 +265,7 @@ def create_backup(
         # 1. CLAUDE.md
         claude_md = claude_dir / "CLAUDE.md"
         if claude_md.exists():
-            copy_file_with_sanitize(
-                claude_md, temp_dir / "CLAUDE.md", sanitize
-            )
+            copy_file_with_sanitize(claude_md, temp_dir / "CLAUDE.md", sanitize)
             log_success("CLAUDE.md")
         else:
             log_warning("CLAUDE.md not found")
@@ -280,9 +273,7 @@ def create_backup(
         # 2. settings.json
         settings = claude_dir / "settings.json"
         if settings.exists():
-            copy_file_with_sanitize(
-                settings, temp_dir / "settings.json", sanitize
-            )
+            copy_file_with_sanitize(settings, temp_dir / "settings.json", sanitize)
             log_success("settings.json")
         else:
             log_warning("settings.json not found")
@@ -290,12 +281,8 @@ def create_backup(
         # 3. skills/
         skills_dir = claude_dir / "skills"
         if skills_dir.exists() and any(skills_dir.iterdir()):
-            copy_directory_with_sanitize(
-                skills_dir, temp_dir / "skills", sanitize
-            )
-            skill_count = len(
-                [d for d in skills_dir.iterdir() if d.is_dir()]
-            )
+            copy_directory_with_sanitize(skills_dir, temp_dir / "skills", sanitize)
+            skill_count = len([d for d in skills_dir.iterdir() if d.is_dir()])
             log_success(f"skills/ ({skill_count} skills)")
         else:
             log_warning("skills/ not found or empty")
@@ -312,22 +299,16 @@ def create_backup(
             )
             # Count plugins
             try:
-                plugins_data = json.loads(
-                    installed_plugins.read_text(encoding="utf-8")
-                )
+                plugins_data = json.loads(installed_plugins.read_text(encoding="utf-8"))
                 plugin_count = len(plugins_data.get("plugins", {}))
-                log_success(
-                    f"plugins/installed_plugins.json ({plugin_count} plugins)"
-                )
+                log_success(f"plugins/installed_plugins.json ({plugin_count} plugins)")
             except (json.JSONDecodeError, KeyError):
                 log_success("plugins/installed_plugins.json")
         else:
             log_warning("plugins/installed_plugins.json not found")
 
         # 5. plugins/known_marketplaces.json
-        known_marketplaces = (
-            claude_dir / "plugins" / "known_marketplaces.json"
-        )
+        known_marketplaces = claude_dir / "plugins" / "known_marketplaces.json"
         if known_marketplaces.exists():
             copy_file_with_sanitize(
                 known_marketplaces,
@@ -345,9 +326,7 @@ def create_backup(
             # history.jsonl
             history = claude_dir / "history.jsonl"
             if history.exists():
-                copy_file_with_sanitize(
-                    history, temp_dir / "history.jsonl", sanitize
-                )
+                copy_file_with_sanitize(history, temp_dir / "history.jsonl", sanitize)
                 size_kb = history.stat().st_size / 1024
                 log_success(f"history.jsonl ({size_kb:.1f} KB)")
             else:
@@ -356,19 +335,11 @@ def create_backup(
             # projects/
             projects_dir = claude_dir / "projects"
             if projects_dir.exists() and any(projects_dir.iterdir()):
-                copy_directory_with_sanitize(
-                    projects_dir, temp_dir / "projects", sanitize
-                )
-                project_count = len(
-                    [d for d in projects_dir.iterdir() if d.is_dir()]
-                )
-                total_size = sum(
-                    f.stat().st_size for f in projects_dir.rglob("*") if f.is_file()
-                )
+                copy_directory_with_sanitize(projects_dir, temp_dir / "projects", sanitize)
+                project_count = len([d for d in projects_dir.iterdir() if d.is_dir()])
+                total_size = sum(f.stat().st_size for f in projects_dir.rglob("*") if f.is_file())
                 size_mb = total_size / (1024 * 1024)
-                log_success(
-                    f"projects/ ({project_count} projects, {size_mb:.2f} MB)"
-                )
+                log_success(f"projects/ ({project_count} projects, {size_mb:.2f} MB)")
             else:
                 log_warning("projects/ not found or empty")
 
@@ -477,9 +448,7 @@ def list_contents(claude_dir: Path) -> None:
                 size_kb = path.stat().st_size / 1024
                 size_info = f" ({size_kb:.1f} KB)"
             elif path.is_dir():
-                total = sum(
-                    f.stat().st_size for f in path.rglob("*") if f.is_file()
-                )
+                total = sum(f.stat().st_size for f in path.rglob("*") if f.is_file())
                 size_mb = total / (1024 * 1024)
                 size_info = f" ({size_mb:.2f} MB)"
         print(f"  {status} {name}{Colors.RESET} - {desc}{size_info}")
@@ -572,9 +541,7 @@ Examples:
                     masked = value[:8] + "..." if len(value) > 12 else "***"
                     print(f"      • {name}: {masked}")
 
-            print(
-                f"\n{Colors.YELLOW}💡 Tip: Use --sanitize to replace these with placeholders{Colors.RESET}"
-            )
+            print(f"\n{Colors.YELLOW}💡 Tip: Use --sanitize to replace these with placeholders{Colors.RESET}")
         return
 
     # Backup mode
@@ -592,16 +559,12 @@ Examples:
     print(f"  • Output: {output_path}")
 
     if args.sanitize:
-        log_warning(
-            "Sanitize mode enabled - sensitive info will be replaced with placeholders"
-        )
+        log_warning("Sanitize mode enabled - sensitive info will be replaced with placeholders")
     else:
         # Scan and warn about sensitive info
         findings = scan_for_sensitive(claude_dir)
         if findings:
-            log_warning(
-                "Sensitive information detected! Use --sanitize to mask, or keep safely."
-            )
+            log_warning("Sensitive information detected! Use --sanitize to mask, or keep safely.")
 
     success, message = create_backup(
         output_path,
@@ -614,9 +577,7 @@ Examples:
         log_success(f"Backup saved to: {message}")
 
         if not args.sanitize:
-            print(
-                f"\n{Colors.YELLOW}⚠️  This backup contains sensitive information.{Colors.RESET}"
-            )
+            print(f"\n{Colors.YELLOW}⚠️  This backup contains sensitive information.{Colors.RESET}")
             print(f"{Colors.YELLOW}   Store it securely!{Colors.RESET}")
     else:
         log_error(f"Backup failed: {message}")

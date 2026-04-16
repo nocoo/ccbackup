@@ -167,7 +167,7 @@ def show_result_dialog(success: bool, message: str, size: float = 0):
 
             msg_lines = message.split("\n")
             for i, line in enumerate(msg_lines[:5]):
-                lines[6 + i] = term.red(line[:term.width - 1])
+                lines[6 + i] = term.red(line[: term.width - 1])
 
         lines[term.height - 2] = term.magenta("─" * term.width)
         lines[term.height - 1] = dim_cyan("Press any key to exit")
@@ -213,6 +213,7 @@ def main():
             }
             print(term.home + term.clear + build_screen(lines), end="", flush=True)
             import time
+
             time.sleep(1)
         return 0
     except Exception as e:
@@ -223,6 +224,7 @@ def main():
             }
             print(term.home + term.clear + build_screen(lines), end="", flush=True)
             import time
+
             time.sleep(2)
         return 1
 

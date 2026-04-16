@@ -1,0 +1,15 @@
+[project]
+name = "ccbackup"
+version = "0.1.0"
+description = "A CLI/TUI tool for backing up Claude Code configuration"
+requires-python = ">=3.9"
+
+[tool.ruff]
+line-length = 120
+target-version = "py39"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
